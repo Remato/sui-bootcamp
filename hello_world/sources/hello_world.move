@@ -1,14 +1,17 @@
 module hello_world::hello_world {
-  use std::debug::print;
-  use std::string::utf8;
+  use std::string;
 
-  fun hello() {
-    print(&utf8(b"Hello world! Sui Bootcamp 2025."));
+  public struct Greeting has key {
+    id: UID,
+    text: string::String,
   }
-  
-  #[test]
-  fun test_hello() {
-    hello();
+
+  public fun hello(ctx: &mut TxContext) { 
+    let new_greeting = Greeting { 
+      id: object::new(ctx),
+      text: b"Hello world! Sui Bootcamp 2025.".to_string()
+    };
+    transfer::share_object(new_greeting);
   }
 }
 
