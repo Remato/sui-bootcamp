@@ -1,5 +1,6 @@
 module odd_counter::odd_counter {
   use std::debug::print;
+  use std::string::utf8;
 
   public struct Counter has drop {
     current: u64,
@@ -40,6 +41,7 @@ module odd_counter::odd_counter {
       get_current(counter);
       increment(counter);
     };
+    print(&utf8(b"Final odds:"));
     print(&counter.odds); 
     reset(counter);
   }
