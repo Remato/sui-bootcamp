@@ -2,9 +2,10 @@ module crowdfunding::vakinha {
   use sui::coin::{Self, Coin};
   use sui::balance::{Self, Balance};
   use std::string::String;
+  // use sui::vec_map::{VecMap, insert, get, length, get_entry_by_idx, empty};
 
   // USDC on Sui (mainet)
-  // use 0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC
+  // use 0xdba34672e30cb065b1f93e3ab55318768fd6fef66c15942c9f7cb846e2f900e7::usdc::USDC;
 
   // USDC mock (devnet/testnet)
   public struct USDC has drop {}
@@ -15,11 +16,12 @@ module crowdfunding::vakinha {
     title: String,
     description: String,
     contact: String,
-    author: address,           
+    author: address,
+    // donors: VecMap<address, u64>,          
     goal: u64,                 // 1 USDC = 1_000_000)
     balance: Balance<USDC>,
     is_open: bool,            
-    created_at: u64           
+    created_at: u64       
   }
 
   /// Proof of donate
@@ -54,6 +56,7 @@ module crowdfunding::vakinha {
       description,
       contact,
       author: tx_context::sender(ctx),
+      // donors: empty(),
       goal,
       balance: balance::zero<USDC>(),
       is_open: true,
@@ -74,6 +77,8 @@ module crowdfunding::vakinha {
     let amount = coin::value(&payment);
     assert!(amount > 0, EInvalidDonationAmount);
 
+    let current_donor = tx_context::sender(ctx);
+
     // Movee USDC to balance
     let coin_balance = coin::into_balance(payment);
     balance::join(&mut campaign.balance, coin_balance);
@@ -82,10 +87,13 @@ module crowdfunding::vakinha {
     let receipt = DonationReceipt {
       id: object::new(ctx),
       campaign_id: object::id(campaign),
-      donor: tx_context::sender(ctx),
+      donor: current_donor,
       amount,
       timestamp: sui::clock::timestamp_ms(clock)
     };
+
+    // TODO: Records the amount that wallet donated 
+    // insert(&mut campaign.donors, current_donor, amount);
 
     // Closes if goal is met
     if (balance::value(&campaign.balance) >= campaign.goal) {
@@ -123,17 +131,23 @@ module crowdfunding::vakinha {
     transfer::public_transfer(coin, campaign.author);
   }
   
-  public fun close_campaign(
-    campaign: &mut Campaign,
-    ctx: &mut TxContext
-  ) {
-    assert!(tx_context::sender(ctx) == campaign.author, ENotAuthor);
-    assert!(campaign.is_open, ECampaignIsClosed);
-    
+  // public fun close_campaign(
+  //   campaign: &mut Campaign,
+  //   ctx: &mut TxContext
+  // ) {
+  //   assert!(tx_context::sender(ctx) == campaign.author, ENotAuthor);
+  //   assert!(campaign.is_open, ECampaignIsClosed);
 
-    // refund here
-    campaign.is_open = false;
-  }
+  //   let number_of_donors = length(&campaign.donors);
+  //   let mut i: u64 = 0;
+  //   while(i < number_of_donors) {
+  //     let (key_ref, value_ref) = get_entry_by_idx(&mut campaign.donors, i);
+  //     transfer::transfer(*value_ref, *key_ref);
+  //     i = i + 1;
+  //   }
+
+  //   campaign.is_open = false;
+  // }
 
   /// return in micro USDC 1_000_000
   public fun get_balance(campaign: &Campaign): u64 {
